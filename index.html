@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5ee">
+  <title>Fruit Lens — Identify, weigh, and explore</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #23332a;
+      background: #f5f5ee;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 2% 0%, #e5edd8 0, transparent 38%), #f5f5ee; }
+    button, input, select { font: inherit; }
+    button, label[for="photo-input"] { cursor: pointer; }
+    .page { width: min(1120px, 100%); margin: 0 auto; padding: 28px 22px 56px; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .brand { display:flex; align-items:center; gap:10px; font-size:.86rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .brand-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:#d9ebc8; font-size:1.2rem; }
+    .top-actions { display:flex; gap:8px; }
+    .button { min-height:40px; padding:0 14px; border:1px solid #d6ddcf; border-radius:10px; background:#fffefa; color:#34443a; font-size:.82rem; font-weight:750; }
+    .button:hover { background:#f0f3e8; }
+    .button.primary { border-color:#284f38; background:#284f38; color:#fff; }
+    .button:disabled { opacity:.55; cursor:wait; }
+    h1 { margin:32px 0 8px; font-size:clamp(2.35rem,6vw,4.6rem); line-height:.98; letter-spacing:-.065em; }
+    h1 span { color:#4c8656; }
+    .intro { max-width:690px; margin:0; color:#6b786d; font-size:.98rem; line-height:1.65; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr); gap:16px; margin-top:26px; align-items:start; }
+    .card { min-width:0; padding:19px; border:1px solid #e3e5da; border-radius:17px; background:#fffefa; box-shadow:0 12px 35px #3343220b; }
+    .card + .card { margin-top:16px; }
+    .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:15px; }
+    .card-title { margin:0; font-size:1rem; letter-spacing:-.02em; }
+    .subtle { margin:5px 0 0; color:#778276; font-size:.77rem; line-height:1.5; }
+    .photo-box { display:grid; place-items:center; position:relative; min-height:275px; overflow:hidden; border:1px dashed #c9d4c3; border-radius:14px; background:linear-gradient(145deg,#f1f5e9,#f9f8f1); }
+    .photo-box img { display:none; width:100%; max-height:430px; object-fit:contain; }
+    .photo-placeholder { padding:24px; color:#74816f; text-align:center; }
+    .photo-placeholder strong { display:block; margin-bottom:6px; color:#435348; font-size:.92rem; }
+    .photo-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    #photo-input { display:none; }
+    .status { min-height:1.4em; margin:10px 0 0; color:#69776c; font-size:.78rem; }
+    .status.error { color:#b4463e; }
+    .field { display:grid; gap:6px; }
+    .field label { color:#667367; font-size:.75rem; font-weight:750; }
+    .field input, .field select { width:100%; min-height:43px; padding:0 11px; border:1px solid #dce1d7; border-radius:9px; background:#fff; color:#2b3b30; }
+    .selection-row { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:14px; }
+    .nutrition { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:14px; }
+    .nutrient { padding:11px 9px; border-radius:10px; background:#f2f5eb; }
+    .nutrient strong { display:block; font-size:1.05rem; font-variant-numeric:tabular-nums; }
+    .nutrient span { display:block; margin-top:3px; color:#7a8677; font-size:.68rem; }
+    .health-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .health-item { padding:11px; border-radius:10px; background:#f2f5eb; }
+    .health-item strong { display:block; margin-bottom:4px; font-size:.77rem; }
+    .health-item span { display:block; color:#728071; font-size:.73rem; line-height:1.45; }
+    .ripeness { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 0; }
+    .ripeness label { display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid #e1e4dc; border-radius:999px; color:#526052; font-size:.75rem; }
+    .note { width:100%; min-height:76px; margin-top:10px; padding:10px; resize:vertical; border:1px solid #dce1d7; border-radius:9px; background:#fff; color:#2b3b30; }
+    .history-list { display:grid; gap:8px; margin-top:12px; }
+    .history-row { display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:10px; padding:10px 11px; border-radius:10px; background:#f4f5ef; font-size:.76rem; }
+    .history-row span { color:#6f7a6d; }
+    .empty { padding:15px; border-radius:10px; background:#f4f5ef; color:#7a8678; font-size:.78rem; text-align:center; }
+    .fineprint { margin:14px 0 0; color:#818b7e; font-size:.7rem; line-height:1.55; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    [hidden] { display:none !important; }
+    @media(max-width:800px) { .layout { grid-template-columns:1fr; } }
+    @media(max-width:500px) { .page { padding:20px 13px 40px; } .topbar { align-items:flex-start; } .top-actions { flex-direction:column; } .selection-row,.health-grid { grid-template-columns:1fr; } .nutrition { grid-template-columns:repeat(2,1fr); } .photo-box { min-height:220px; } }
+    @media print {
+      body { background:#fff; color:#111; }
+      .page { width:100%; padding:0; }
+      .no-print, .photo-actions, .top-actions, .photo-placeholder, .note { display:none !important; }
+      .layout { display:block; }
+      .card { margin:0 0 12px !important; border:1px solid #bbb; box-shadow:none; break-inside:avoid; }
+      .photo-box { min-height:0; border:0; background:#fff; }
+      .photo-box img { display:block !important; max-height:280px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">🍃</span> Fruit Lens</div>
+      <div class="top-actions no-print">
+        <button class="button" id="export-button" type="button">Export log</button>
+        <button class="button primary" id="print-button" type="button">Print report</button>
+      </div>
+    </header>
+    <h1>Know your <span>fruit.</span></h1>
+    <p class="intro">Identify a fruit from a photo, enter its measured weight, and explore an approximate nutrition snapshot. Your photo stays on this device.</p>
+
+    <div class="layout">
+      <section>
+        <article class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">Fruit identifier</h2><p class="subtle">Take a photo or choose one. Recognition needs an internet connection to load the image model; photo analysis happens in your browser.</p></div>
+          </div>
+          <div class="photo-box">
+            <div class="photo-placeholder" id="photo-placeholder"><strong>🍊 Add a fruit photo</strong>Place one fruit clearly in the frame for best results.</div>
+            <img id="photo-preview" alt="Selected fruit preview">
+          </div>
+          <div class="photo-actions no-print">
+            <label class="button primary" for="photo-input">Take / choose photo</label>
+            <input id="photo-input" type="file" accept="image/*" capture="environment">
+            <button class="button" id="identify-button" type="button" disabled>Identify fruit</button>
+            <button class="button" id="clear-photo" type="button" hidden>Clear photo</button>
+          </div>
+          <p class="status" id="identify-status" role="status" aria-live="polite">Start by adding a photo or selecting a fruit manually.</p>
+          <div id="predictions" class="subtle" hidden></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2 class="card-title">Fruit & measured weight</h2><p class="subtle">Use a kitchen scale for weight; a photo alone cannot accurately measure grams.</p></div></div>
+          <div class="selection-row">
+            <div class="field"><label for="fruit-select">Fruit</label><select id="fruit-select"></select></div>
+            <div class="field"><label for="weight-input">Weight (grams)</label><input id="weight-input" type="number" min="1" max="50000" step="1" value="150" inputmode="decimal"></div>
+          </div>
+          <div class="nutrition" aria-live="polite">
+            <div class="nutrient"><strong id="calories">—</strong><span>Calories · kcal</span></div>
+            <div class="nutrient"><strong id="carbs">—</strong><span>Carbohydrates · g</span></div>
+            <div class="nutrient"><strong id="fiber">—</strong><span>Fiber · g</span></div>
+            <div class="nutrient"><strong id="sugar">—</strong><span>Sugars · g</span></div>
+          </div>
+          <div class="photo-actions no-print">
+            <button class="button primary" id="save-button" type="button">Save to fruit log</button>
+          </div>
+          <p class="fineprint">Nutrition is an approximate estimate scaled from typical values per 100 g of edible fruit. Actual values vary with variety, ripeness, preparation, and edible portion.</p>
+        </article>
+      </section>
+
+      <section>
+        <article class="card">
+          <div class="card-head"><div><h2 class="card-title">Health & freshness notes</h2><p class="subtle">General food information only—not a diagnosis or personalized medical advice.</p></div></div>
+          <div class="health-grid">
+            <div class="health-item"><strong>Nutrition note</strong><span id="health-note">Choose a fruit to see its general nutrition profile.</span></div>
+            <div class="health-item"><strong>Common allergens</strong><span id="allergen-note">Allergies vary by person. Check packaging and seek medical guidance when needed.</span></div>
+            <div class="health-item"><strong>Storage tip</strong><span id="storage-note">Storage advice will appear here.</span></div>
+            <div class="health-item"><strong>Photo limits</strong><span>Image recognition cannot verify freshness, pesticide residue, or whether food is safe to eat.</span></div>
+          </div>
+          <div class="field" style="margin-top:16px">
+            <label>How does it look to you?</label>
+            <div class="ripeness" role="group" aria-label="Your visual ripeness check">
+              <label><input type="radio" name="ripeness" value="Unripe"> Unripe</label>
+              <label><input type="radio" name="ripeness" value="Ripe" checked> Ripe</label>
+              <label><input type="radio" name="ripeness" value="Very ripe"> Very ripe</label>
+              <label><input type="radio" name="ripeness" value="Unsure"> Unsure</label>
+            </div>
+          </div>
+          <textarea class="note no-print" id="fruit-note" placeholder="Optional notes: color, smell, texture, or anything you want to remember." aria-label="Fruit notes"></textarea>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div><h2 class="card-title">Recent fruit log</h2><p class="subtle">Saved only in this browser.</p></div>
+            <button class="button no-print" id="clear-history" type="button">Clear log</button>
+          </div>
+          <div class="history-list" id="history-list"></div>
+        </article>
+      </section>
+    </div>
+    <p class="fineprint">If you have a medical condition, food allergy, or dietary restriction, use advice from a qualified health professional rather than this estimate.</p>
+  </main>
+  <script>
+    const fruits = {
+      apple: { label:"Apple", kcal:52, carbs:13.8, fiber:2.4, sugar:10.4, note:"A source of fiber; eaten whole, it also provides water.", allergy:"May trigger oral allergy symptoms in some people, especially with pollen allergy.", storage:"Keep refrigerated for longer storage; separate bruised fruit." },
+      banana: { label:"Banana", kcal:89, carbs:22.8, fiber:2.6, sugar:12.2, note:"Provides carbohydrates and potassium.", allergy:"Latex-fruit cross-reactions are possible for some people.", storage:"Ripen at room temperature; refrigerate when ripe to slow softening." },
+      orange: { label:"Orange", kcal:47, carbs:11.8, fiber:2.4, sugar:9.4, note:"A source of vitamin C and water.", allergy:"Citrus allergy is uncommon but possible; acidity can bother some people.", storage:"Store cool; refrigerate to extend freshness." },
+      mango: { label:"Mango", kcal:60, carbs:15, fiber:1.6, sugar:13.7, note:"Provides vitamin C and carotenoids.", allergy:"Mango peel can irritate people sensitive to related plants.", storage:"Ripen on the counter; refrigerate once ripe." },
+      grapes: { label:"Grapes", kcal:69, carbs:18.1, fiber:0.9, sugar:15.5, note:"A convenient source of carbohydrate and water.", allergy:"Grape allergy is possible; wash well before eating.", storage:"Refrigerate unwashed and rinse just before eating." },
+      strawberry: { label:"Strawberry", kcal:32, carbs:7.7, fiber:2, sugar:4.9, note:"A source of vitamin C and fiber.", allergy:"Can cause allergy symptoms in some people.", storage:"Refrigerate dry; rinse shortly before eating." },
+      pineapple: { label:"Pineapple", kcal:50, carbs:13.1, fiber:1.4, sugar:9.9, note:"Provides vitamin C; its acidity may be noticeable.", allergy:"May cause mouth irritation; true allergy is also possible.", storage:"Refrigerate cut pieces in a covered container." },
+      watermelon: { label:"Watermelon", kcal:30, carbs:7.6, fiber:0.4, sugar:6.2, note:"High water content makes it refreshing.", allergy:"Melon allergy may overlap with some pollen allergies.", storage:"Refrigerate cut watermelon promptly." },
+      papaya: { label:"Papaya", kcal:43, carbs:10.8, fiber:1.7, sugar:7.8, note:"Provides vitamin C and water.", allergy:"Latex-fruit cross-reactions are possible for some people.", storage:"Ripen at room temperature, then refrigerate." },
+      pear: { label:"Pear", kcal:57, carbs:15.2, fiber:3.1, sugar:9.8, note:"A source of fiber, especially when eaten with its skin.", allergy:"May trigger oral allergy symptoms in some people.", storage:"Ripen at room temperature; refrigerate when ready." },
+      peach: { label:"Peach", kcal:39, carbs:9.5, fiber:1.5, sugar:8.4, note:"Provides water and small amounts of fiber.", allergy:"Stone-fruit or pollen cross-reactions are possible.", storage:"Ripen at room temperature; handle gently." },
+      kiwi: { label:"Kiwi", kcal:61, carbs:14.7, fiber:3, sugar:9, note:"A source of vitamin C and fiber.", allergy:"Kiwi can cause significant allergic reactions in some people.", storage:"Ripen at room temperature; refrigerate ripe fruit." },
+      avocado: { label:"Avocado", kcal:160, carbs:8.5, fiber:6.7, sugar:0.7, note:"Contains mostly unsaturated fat and fiber; more energy-dense than most fruits.", allergy:"Latex-fruit cross-reactions are possible.", storage:"Ripen on the counter; refrigerate once ripe." },
+      lemon: { label:"Lemon", kcal:29, carbs:9.3, fiber:2.8, sugar:2.5, note:"Often used in small amounts; contributes acidity and vitamin C.", allergy:"Citrus allergy is uncommon but possible.", storage:"Refrigerate for longer storage." },
+      cherry: { label:"Cherry", kcal:63, carbs:16, fiber:2.1, sugar:12.8, note:"Provides carbohydrates and some fiber.", allergy:"Stone-fruit or pollen cross-reactions are possible.", storage:"Refrigerate unwashed and remove damaged fruit." },
+      blueberry: { label:"Blueberry", kcal:57, carbs:14.5, fiber:2.4, sugar:10, note:"A source of fiber and colorful plant compounds.", allergy:"Allergy is uncommon but possible.", storage:"Refrigerate dry; rinse shortly before eating." },
+      pomegranate: { label:"Pomegranate", kcal:83, carbs:18.7, fiber:4, sugar:13.7, note:"Arils provide fiber and plant compounds.", allergy:"Allergy is possible; check packaged products for added ingredients.", storage:"Refrigerate whole or store arils covered." },
+      guava: { label:"Guava", kcal:68, carbs:14.3, fiber:5.4, sugar:8.9, note:"A source of vitamin C and fiber.", allergy:"Allergy is possible, though uncommon.", storage:"Ripen at room temperature; refrigerate ripe fruit." }
+    };
+    const $ = (id) => document.getElementById(id);
+    const fruitSelect = $("fruit-select");
+    const photoInput = $("photo-input");
+    const preview = $("photo-preview");
+    let photoUrl = "";
+    let modelPromise;
+    const historyKey = "fruit-lens-history-v1";
+
+    Object.entries(fruits).forEach(([key, fruit]) => fruitSelect.add(new Option(fruit.label, key)));
+
+    function selectedRipeness() {
+      return document.querySelector('input[name="ripeness"]:checked')?.value || "Unsure";
+    }
+
+    function renderNutrition() {
+      const fruit = fruits[fruitSelect.value];
+      const weight = Number($("weight-input").value);
+      if (!fruit || !Number.isFinite(weight) || weight <= 0) {
+        ["calories","carbs","fiber","sugar"].forEach((id) => $(id).textContent = "—");
+        return;
+      }
+      const multiplier = weight / 100;
+      $("calories").textContent = (fruit.kcal * multiplier).toFixed(0);
+      $("carbs").textContent = (fruit.carbs * multiplier).toFixed(1);
+      $("fiber").textContent = (fruit.fiber * multiplier).toFixed(1);
+      $("sugar").textContent = (fruit.sugar * multiplier).toFixed(1);
+      $("health-note").textContent = fruit.note;
+      $("allergen-note").textContent = fruit.allergy;
+      $("storage-note").textContent = fruit.storage;
+    }
+
+    function readHistory() {
+      try {
+        const value = JSON.parse(localStorage.getItem(historyKey) || "[]");
+        return Array.isArray(value) ? value.filter((item) => item && fruits[item.fruit] && Number.isFinite(item.weight)) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function renderHistory() {
+      const container = $("history-list");
+      container.replaceChildren();
+      const entries = readHistory();
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No saved fruit yet. Add one to start your log.";
+        container.appendChild(empty);
+        return;
+      }
+      entries.slice(0, 8).forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "history-row";
+        const name = document.createElement("strong");
+        name.textContent = fruits[entry.fruit].label;
+        const weight = document.createElement("span");
+        weight.textContent = entry.weight + " g · " + entry.ripeness;
+        const date = document.createElement("span");
+        date.textContent = new Intl.DateTimeFormat(undefined, { month:"short", day:"numeric" }).format(new Date(entry.date));
+        row.append(name, weight, date);
+        container.appendChild(row);
+      });
+    }
+
+    function saveFruit() {
+      const weight = Number($("weight-input").value);
+      if (!Number.isFinite(weight) || weight <= 0 || weight > 50000) {
+        $("identify-status").className = "status error";
+        $("identify-status").textContent = "Enter a measured weight between 1 and 50,000 grams.";
+        return;
+      }
+      const entries = readHistory();
+      entries.unshift({
+        fruit: fruitSelect.value,
+        weight,
+        ripeness: selectedRipeness(),
+        note: $("fruit-note").value.trim(),
+        date: new Date().toISOString()
+      });
+      try {
+        localStorage.setItem(historyKey, JSON.stringify(entries.slice(0, 50)));
+      } catch {
+        $("identify-status").className = "status error";
+        $("identify-status").textContent = "Could not save this entry in browser storage.";
+        return;
+      }
+      renderHistory();
+      $("identify-status").className = "status";
+      $("identify-status").textContent = fruits[fruitSelect.value].label + " added to your private fruit log.";
+    }
+
+    function fruitFromPrediction(label) {
+      const text = label.toLowerCase();
+      const mappings = [
+        ["watermelon", ["watermelon"]], ["pineapple", ["pineapple"]], ["pomegranate", ["pomegranate"]],
+        ["strawberry", ["strawberry"]], ["blueberry", ["blueberry"]], ["banana", ["banana", "plantain"]],
+        ["orange", ["orange", "tangerine", "clementine"]], ["lemon", ["lemon", "lime"]],
+        ["apple", ["apple", "granny smith"]], ["grapes", ["grape"]], ["avocado", ["avocado"]],
+        ["mango", ["mango"]], ["papaya", ["papaya"]], ["pear", ["pear"]], ["peach", ["peach", "nectarine"]],
+        ["kiwi", ["kiwi"]], ["cherry", ["cherry"]], ["guava", ["guava"]]
+      ];
+      return mappings.find(([, words]) => words.some((word) => text.includes(word)))?.[0] || "";
+    }
+
+    function loadRecognitionModel() {
+      if (!modelPromise) {
+        modelPromise = new Promise((resolve, reject) => {
+          const addScript = (src) => new Promise((res, rej) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = res;
+            script.onerror = () => rej(new Error("Could not load the image recognition library. Check your internet connection."));
+            document.head.appendChild(script);
+          });
+          addScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js")
+            .then(() => addScript("https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1"))
+            .then(() => {
+              if (!window.mobilenet) throw new Error("Image recognition is unavailable in this browser.");
+              return window.mobilenet.load({ version: 2, alpha: 1 });
+            }).then(resolve).catch(reject);
+        });
+      }
+      return modelPromise;
+    }
+
+    async function identifyFruit() {
+      if (!photoUrl) return;
+      const button = $("identify-button");
+      button.disabled = true;
+      $("identify-status").className = "status";
+      $("identify-status").textContent = "Loading the image model… the first run may take a little while.";
+      $("predictions").hidden = true;
+      try {
+        const model = await loadRecognitionModel();
+        $("identify-status").textContent = "Looking for familiar fruit shapes and colors…";
+        const results = await model.classify(preview, 5);
+        if (!results.length) throw new Error("No visual matches were returned. Try a clearer photo or choose a fruit manually.");
+        const suggestion = results.map((item) => ({ ...item, fruit: fruitFromPrediction(item.className) })).find((item) => item.fruit);
+        const predictions = $("predictions");
+        predictions.textContent = "Image model suggestions: " + results.slice(0, 3).map((item) => item.className + " (" + Math.round(item.probability * 100) + "%)").join(" · ");
+        predictions.hidden = false;
+        if (suggestion) {
+          fruitSelect.value = suggestion.fruit;
+          renderNutrition();
+          $("identify-status").textContent = "Possible match: " + fruits[suggestion.fruit].label + " (" + Math.round(suggestion.probability * 100) + "% model confidence). Please confirm the selection.";
+        } else {
+          $("identify-status").textContent = "I couldn’t confidently match a fruit. Choose the closest match from the fruit list.";
+        }
+      } catch (error) {
+        $("identify-status").className = "status error";
+        $("identify-status").textContent = error.message || "Could not identify this image. You can still select a fruit manually.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function setPhoto(file) {
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        $("identify-status").className = "status error";
+        $("identify-status").textContent = "Choose an image file to continue.";
+        return;
+      }
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      photoUrl = URL.createObjectURL(file);
+      preview.src = photoUrl;
+      preview.style.display = "block";
+      $("photo-placeholder").hidden = true;
+      $("identify-button").disabled = false;
+      $("clear-photo").hidden = false;
+      $("identify-status").className = "status";
+      $("identify-status").textContent = "Photo ready. Choose Identify fruit to get model suggestions.";
+      $("predictions").hidden = true;
+    }
+
+    function clearPhoto() {
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      photoUrl = "";
+      photoInput.value = "";
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      $("photo-placeholder").hidden = false;
+      $("identify-button").disabled = true;
+      $("clear-photo").hidden = true;
+      $("predictions").hidden = true;
+      $("identify-status").className = "status";
+      $("identify-status").textContent = "Start by adding a photo or selecting a fruit manually.";
+    }
+
+    function exportHistory() {
+      const entries = readHistory();
+      if (!entries.length) {
+        $("identify-status").textContent = "Your fruit log is empty. Save a fruit before exporting.";
+        return;
+      }
+      const csvCell = (value) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+      const lines = [["Date","Fruit","Weight (g)","Ripeness","Notes"], ...entries.map((item) => [
+        item.date, fruits[item.fruit].label, item.weight, item.ripeness, item.note
+      ])].map((row) => row.map(csvCell).join(","));
+      const blob = new Blob([lines.join("\r\n")], { type:"text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "fruit-lens-log.csv";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    fruitSelect.addEventListener("change", renderNutrition);
+    $("weight-input").addEventListener("input", renderNutrition);
+    photoInput.addEventListener("change", () => setPhoto(photoInput.files[0]));
+    $("identify-button").addEventListener("click", identifyFruit);
+    $("clear-photo").addEventListener("click", clearPhoto);
+    $("save-button").addEventListener("click", saveFruit);
+    $("clear-history").addEventListener("click", () => {
+      if (!readHistory().length) return;
+      if (!window.confirm("Clear all saved fruit log entries from this browser?")) return;
+      localStorage.removeItem(historyKey);
+      renderHistory();
+    });
+    $("export-button").addEventListener("click", exportHistory);
+    $("print-button").addEventListener("click", () => window.print());
+    renderNutrition();
+    renderHistory();
+  </script>
+</body>
+</html>
